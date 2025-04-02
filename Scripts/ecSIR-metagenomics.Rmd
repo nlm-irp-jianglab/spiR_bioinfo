@@ -16,26 +16,14 @@ library(dplyr)
 
 ```{r data}
 
-# PRISM data
-metadata <- read.csv("../PRISM/metadata_prism.tsv", sep="\t")
+data <- read.csv("Tables/Supplemental_Table_Metagenomics.txt", sep="\t")
 
-# Reads mapped table
-reads <- read.csv("../PRISM/PRISM_all_data.tsv", sep="\t")
-
-# Raw data in Tables/ folder
-converter_status <- read.csv("../PRISM/sample_to_converter_PRISM.csv", sep=",")
-
-# Merging reads table with metadata table by SRS number
-reads_to_metadata <- merge(metadata, reads, by="Sample")
-
-# Merge with converter status by Sample ID
-total <- merge(reads_to_metadata, converter_status, by="Sample_ID")
 ```
 
 ## CPM calculation
 
 ```{r cpm, echo=FALSE}
-processed <- total %>%
+processed <- data %>%
   filter(total_reads >= 1000000) %>%
   mutate(sir_species_cpm = reads_mapped_sir_species / total_reads * 1000000) %>%
   mutate(ismA_species_cpm = reads_mapped_ismA_species / total_reads * 1000000) %>%
@@ -47,51 +35,354 @@ processed <- processed %>%
   mutate(ismA_Encoder = ifelse(ismA_gene_cpm >= 2, "Encoder", "Non-Encoder")) %>%
   mutate(sir_Encoder = ifelse(sir_gene_cpm >= 2, "Encoder", "Non-Encoder"))
 
-ismA_summary <- processed %>%
-  group_by(Converter, ismA_Encoder) %>%
-  summarise(Count = n(), .groups = "drop") %>%
-  group_by(Converter) %>%
-  mutate(Percentage = (Count / sum(Count)) * 100)
-
-sir_summary <- processed %>%
-  group_by(Converter, sir_Encoder) %>%
-  summarise(Count = n(), .groups = "drop") %>%
-  group_by(Converter) %>%
-  mutate(Percentage = (Count / sum(Count)) * 100)
-
 ```
 
-## Plot results
+## Plot results for PRISM
 
 ```{r plot}
 
 library(patchwork)
 
-sir_summary$sir_Encoder <- factor(sir_summary$sir_Encoder, levels = c("Non-Encoder", "Encoder"))
-ismA_summary$ismA_Encoder <- factor(ismA_summary$ismA_Encoder, levels = c("Non-Encoder", "Encoder"))
+PRISM_area_threshold <- 1e6
 
-sir_summary$Converter <- factor(sir_summary$Converter, levels = c("Converter", "Non-Converter"), labels = c("Detected", "Undetected"))
-ismA_summary$Converter <- factor(ismA_summary$Converter, levels = c("Converter", "Non-Converter"), labels = c("Detected", "Undetected"))
+ismA_summary_prism <- processed %>%
+  mutate(Converter = ifelse(area_coprostanol > PRISM_area_threshold, "Converter", "Non-Converter")) %>%
+  filter(Study == "PRISM") %>%
+  group_by(Converter, ismA_Encoder) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  group_by(Converter) %>%
+  mutate(Percentage = (Count / sum(Count)) * 100)
 
-p1 <- ggplot(sir_summary, aes(x = Converter, y = Percentage, fill = sir_Encoder)) +
+sir_summary_prism <- processed %>%
+  mutate(Converter = ifelse(area_coprostanol > PRISM_area_threshold, "Converter", "Non-Converter")) %>%
+  filter(Study == "PRISM") %>%
+  group_by(Converter, sir_Encoder) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  group_by(Converter) %>%
+  mutate(Percentage = (Count / sum(Count)) * 100)
+
+sir_summary_prism$sir_Encoder <- factor(sir_summary_prism$sir_Encoder, levels = c("Non-Encoder", "Encoder"))
+ismA_summary_prism$ismA_Encoder <- factor(ismA_summary_prism$ismA_Encoder, levels = c("Non-Encoder", "Encoder"))
+
+sir_summary_prism$Converter <- factor(sir_summary_prism$Converter, levels = c("Converter", "Non-Converter"), labels = c("Detected", "Undetected"))
+ismA_summary_prism$Converter <- factor(ismA_summary_prism$Converter, levels = c("Converter", "Non-Converter"), labels = c("Detected", "Undetected"))
+
+p1 <- ggplot(sir_summary_prism, aes(x = Converter, y = Count, fill = sir_Encoder)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Encoder" = "#ff7f00", "Non-Encoder" = "gray")) +  # Custom colors
+  labs(title = "PRISM",
+       x = "Fecal Coprostanol",
+       xlabs = ("Detected, Undetected"),
+       y = "Count") +
+  theme_classic() +
+  guides(fill = guide_legend(title = "ecSIR"))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p2 <- ggplot(ismA_summary_prism, aes(x = Converter, y = Count, fill = ismA_Encoder)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Encoder" = "#377eb8", "Non-Encoder" = "gray")) +  # Custom colors
+  labs(
+       x = "Fecal Coprostanol",
+       xlabs = ("Detected, Undetected"),
+       y = "Count") +
+  theme_classic() +
+  guides(fill = guide_legend(title = "ismA"))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+prism <- p1 + p2
+
+prism
+
+```
+
+## Plot results for HMP2
+
+```{r plot_hmp2}
+
+library(patchwork)
+
+HMP2_area_threshold <- 1e6
+
+ismA_summary_hmp2 <- processed %>%
+  filter(Study == "HMP2") %>%
+  mutate(Converter = ifelse(area_coprostanol > HMP2_area_threshold, "Converter", "Non-Converter")) %>%
+  group_by(Converter, ismA_Encoder) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  group_by(Converter) %>%
+  mutate(Percentage = (Count / sum(Count)) * 100)
+
+sir_summary_hmp2 <- processed %>%
+  filter(Study == "HMP2") %>%
+  mutate(Converter = ifelse(area_coprostanol > HMP2_area_threshold, "Converter", "Non-Converter")) %>%
+  group_by(Converter, sir_Encoder) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  group_by(Converter) %>%
+  mutate(Percentage = (Count / sum(Count)) * 100)
+
+sir_summary_hmp2$sir_Encoder <- factor(sir_summary_hmp2$sir_Encoder, levels = c("Non-Encoder", "Encoder"))
+ismA_summary_hmp2$ismA_Encoder <- factor(ismA_summary_hmp2$ismA_Encoder, levels = c("Non-Encoder", "Encoder"))
+
+sir_summary_hmp2$Converter <- factor(sir_summary_hmp2$Converter, levels = c("Converter", "Non-Converter"), labels = c("Detected", "Undetected"))
+ismA_summary_hmp2$Converter <- factor(ismA_summary_hmp2$Converter, levels = c("Converter", "Non-Converter"), labels = c("Detected", "Undetected"))
+
+p3 <- ggplot(sir_summary_hmp2, aes(x = Converter, y = Count, fill = sir_Encoder)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Encoder" = "#ff7f00", "Non-Encoder" = "gray")
+                    ) +  # Custom colors
+  labs(title = "HMP2",
+       x = "Fecal Coprostanol",
+       xlabs = ("Detected, Undetected"),
+       y = "Count",
+       ) +
+  theme_classic() +
+  guides(fill = guide_legend(title = "ecSIR"))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels by 45 degrees
+
+p4 <- ggplot(ismA_summary_hmp2, aes(x = Converter, y = Count, fill = ismA_Encoder)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Encoder" = "#377eb8", "Non-Encoder" = "gray")) +  # Custom colors
+  labs(
+       x = "Fecal Coprostanol",
+       xlabs = ("Detected, Undetected"),
+       y = "Count") +
+  theme_classic() +
+  guides(fill = guide_legend(title = "ismA"))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+hmp2 <- p3 + p4
+
+hmp2
+
+```
+
+
+## Plot results for PROTECT
+
+```{r plot_protect}
+
+library(patchwork)
+
+PROTECT_area_threshold <- 1e5
+
+ismA_summary_protect <- processed %>%
+  filter(Study == "PROTECT") %>%
+  mutate(Converter = ifelse(area_coprostanol > PROTECT_area_threshold, "Converter", "Non-Converter")) %>%
+  group_by(Converter, ismA_Encoder) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  group_by(Converter) %>%
+  mutate(Percentage = (Count / sum(Count)) * 100)
+
+sir_summary_protect <- processed %>%
+  filter(Study == "PROTECT") %>%
+  mutate(Converter = ifelse(area_coprostanol > PROTECT_area_threshold, "Converter", "Non-Converter")) %>%
+  group_by(Converter, sir_Encoder) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  group_by(Converter) %>%
+  mutate(Percentage = (Count / sum(Count)) * 100)
+
+sir_summary_protect$sir_Encoder <- factor(sir_summary_protect$sir_Encoder, levels = c("Non-Encoder", "Encoder"))
+ismA_summary_protect$ismA_Encoder <- factor(ismA_summary_protect$ismA_Encoder, levels = c("Non-Encoder", "Encoder"))
+
+sir_summary_protect$Converter <- factor(sir_summary_protect$Converter, levels = c("Converter", "Non-Converter"), labels = c("Detected", "Undetected"))
+ismA_summary_protect$Converter <- factor(ismA_summary_protect$Converter, levels = c("Converter", "Non-Converter"), labels = c("Detected", "Undetected"))
+
+p5 <- ggplot(sir_summary_protect, aes(x = Converter, y = Count, fill = sir_Encoder)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Encoder" = "#ff7f00", "Non-Encoder" = "gray")) +  # Custom colors
+  labs(title = "PROTECT",
+       x = "Fecal Coprostanol",
+       xlabs = ("Detected, Undetected"),
+       y = "Count") +
+  theme_classic() +
+  guides(fill = guide_legend(title = "ecSIR"))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p6 <- ggplot(ismA_summary_protect, aes(x = Converter, y = Count, fill = ismA_Encoder)) +
+  geom_bar(stat = "identity") +
+  theme_classic() +
+  scale_fill_manual(values = c("Encoder" = "#377eb8", "Non-Encoder" = "gray")) +  # Custom colors
+  labs(
+       x = "Fecal Coprostanol",
+       xlabs = ("Detected, Undetected"),
+       y = "Count") +
+  theme_classic() +
+  guides(fill = guide_legend(title = "ismA"))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+protect <- p5 + p6
+
+protect
+
+```
+
+```{r}
+
+combined_plot <- p1 + p2 + p3 + p4 + p5 + p6  + plot_layout(guides = "collect", axes = "collect", nrow = 1, widths=10)
+
+combined_plot
+
+```
+
+```{r plot_func}
+
+generate_violin_box_jitter_plot <- function(data, area_col, steroid_label, study) {
+  ggplot(data, aes(x = sir_Encoder, y = log10(get(area_col) + 1), fill = sir_Encoder)) +
+    geom_violin() +  # Create the violin plot
+    scale_fill_manual(values = c("gray", "#ff7f00")) + 
+    geom_boxplot(width = 0.1, color = "black", alpha = 0.2, outlier.shape = NA) +
+    geom_jitter(shape = 21, size = 1, fill="darkgray", stroke = 0.5, alpha = 0.5) +  # Add points with black outline
+    theme_classic() +  # Use a minimal theme
+    labs(title = study,
+         x = "ecSIR encoder status",
+         y = paste(steroid_label, " (log10 peak area)")) +  # Add titles and axis labels
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+generate_violin_box_jitter_plot_ismA <- function(data, area_col, steroid_label, study) {
+  ggplot(data, aes(x = sir_Encoder, y = log10(get(area_col) + 1), fill = sir_Encoder)) +
+    geom_violin() +  # Create the violin plot
+    scale_fill_manual(values = c("gray", "#ff7f00")) + 
+    geom_boxplot(width = 0.1, color = "black", alpha = 0.2, outlier.shape = NA) +
+    geom_jitter(shape = 21, size = 1, fill="darkgray", stroke = 0.5, alpha = 0.5) +  # Add points with black outline
+    theme_classic() +  # Use a minimal theme
+    labs(title = study,
+         x = "ecSIR encoder status",
+         y = paste(steroid_label, " (log10 peak area)")) +  # Add titles and axis labels
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+```
+
+
+```{r prism_levels}
+
+prism_data <- processed %>%
+  filter(Study == "PRISM")
+
+prism_data$sir_Encoder <- factor(prism_data$sir_Encoder, levels = c("Non-Encoder", "Encoder"))
+
+coprostanol_prism <- generate_violin_box_jitter_plot(prism_data, "area_coprostanol","Stool Coprostanol", "PRISM")
+
+cholesterol_prism <- generate_violin_box_jitter_plot(prism_data, "area_cholesterol", "Stool Cholesterol", "PRISM")
+
+cholestenone_prism <- generate_violin_box_jitter_plot(prism_data, "area_cholestenone", "Stool Cholestenone", "PRISM")
+
+wilcox.test(area_cholesterol ~ sir_Encoder, data = prism_data)
+
+wilcox.test(area_cholestenone ~ sir_Encoder, data = prism_data)
+
+wilcox.test(area_coprostanol ~ sir_Encoder, data = prism_data)
+
+
+```
+
+
+```{r hmp2_levels}
+
+hmp2_data <- processed %>%
+  filter(Study == "HMP2")
+
+hmp2_data$sir_Encoder <- factor(hmp2_data$sir_Encoder, levels = c("Non-Encoder", "Encoder"))
+
+coprostanol_hmp2 <- generate_violin_box_jitter_plot(hmp2_data, "area_coprostanol", "Stool Coprostanol", "HMP2")
+
+cholesterol_hmp2 <- generate_violin_box_jitter_plot(hmp2_data, "area_cholesterol", "Stool Cholesterol", "HMP2")
+
+cholestenone_hmp2 <- generate_violin_box_jitter_plot(hmp2_data, "area_cholestenone", "Stool Cholestenone", "HMP2")
+
+wilcox.test(area_cholesterol ~ sir_Encoder, data = hmp2_data)
+
+wilcox.test(area_cholestenone ~ sir_Encoder, data = hmp2_data)
+
+wilcox.test(area_coprostanol ~ sir_Encoder, data = hmp2_data)
+
+
+```
+
+
+```{r protect_levels}
+
+protect_data <- processed %>%
+  filter(Study == "PROTECT")
+
+protect_data$sir_Encoder <- factor(protect_data$sir_Encoder, levels = c("Non-Encoder", "Encoder"))
+
+coprostanol_protect <- generate_violin_box_jitter_plot(protect_data, "area_coprostanol", "Stool Coprostanol", "PROTECT")
+
+cholesterol_protect <- generate_violin_box_jitter_plot(protect_data, "area_cholesterol", "Stool Cholesterol", "PROTECT")
+
+cholestenone_protect <- generate_violin_box_jitter_plot(protect_data, "area_cholestenone", "Stool Cholestenone", "PROTECT")
+
+wilcox.test(area_cholesterol ~ sir_Encoder, data = protect_data)
+
+wilcox.test(area_cholestenone ~ sir_Encoder, data = protect_data)
+
+wilcox.test(area_coprostanol ~ sir_Encoder, data = protect_data)
+
+
+```
+
+#plot cholesterol
+```{r cholesterol_plot}
+
+cholesterol_hmp2 + cholesterol_prism + cholesterol_protect + plot_layout(guides = "collect", axes = "collect", nrow = 1, widths=10)
+
+
+```
+
+#plot cholestenone
+```{r cholestenone_plot}
+
+cholestenone_hmp2 + cholestenone_prism + cholestenone_protect + plot_layout(guides = "collect", axes = "collect", nrow = 1, widths=10)
+
+
+```
+
+#plot coprostanol
+```{r coprostanol_plot}
+
+coprostanol_hmp2 + coprostanol_prism + coprostanol_protect + plot_layout(guides = "collect", axes = "collect", nrow = 1, widths=10)
+
+
+```
+
+```{r disease_plot}
+#playground
+library(tidyr)
+disease_summary_ismA <- processed %>%
+  group_by(Diagnosis, ismA_Encoder) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  group_by(Diagnosis) %>%
+  mutate(Percentage = (Count / sum(Count)) * 100)
+
+disease_summary_sir <- processed %>%
+  group_by(Diagnosis, sir_Encoder) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  group_by(Diagnosis) %>%
+  mutate(Percentage = (Count / sum(Count)) * 100)
+
+
+p1 <- ggplot(disease_summary_sir, aes(x = Diagnosis, y = Count, fill = sir_Encoder)) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = c("Encoder" = "#ff7f00", "Non-Encoder" = "gray")) +  # Custom colors
   labs(title = "ismA vs ecSIR and Conversion of Cholesterol",
        x = "Converter Status",
        xlabs = ("Detected, Undetected"),
-       y = "Percentage") +
+       y = "Count") +
   theme_minimal()
 
-p2 <- ggplot(ismA_summary, aes(x = Converter, y = Percentage, fill = ismA_Encoder)) +
+p2 <- ggplot(disease_summary_ismA, aes(x = Diagnosis, y = Count, fill = ismA_Encoder)) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = c("Encoder" = "#377eb8", "Non-Encoder" = "gray")) +  # Custom colors
   labs(
        x = "Coprostanol",
        xlabs = ("Detected, Undetected"),
-       y = "Percentage") +
+       y = "Count") +
   theme_minimal()
 
 p1 + p2
 
 ```
+
+
 
