@@ -238,14 +238,14 @@ generate_violin_box_jitter_plot <- function(data, area_col, steroid_label, study
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 }
 
-generate_violin_box_jitter_plot_ismA <- function(data, area_col, steroid_label, study) {
-  ggplot(data, aes(x = sir_Encoder, y = log10(get(area_col) + 1), fill = sir_Encoder)) +
+ismA_generate_violin_box_jitter_plot <- function(data, area_col, steroid_label, study) {
+  ggplot(data, aes(x = ismA_Encoder, y = log10(get(area_col) + 1), fill = ismA_Encoder)) +
     geom_violin() +  # Create the violin plot
-    scale_fill_manual(values = c("gray", "#ff7f00")) + 
+    scale_fill_manual(values = c("gray", "#377eb8")) + 
     geom_boxplot(width = 0.1, color = "black", alpha = 0.2, outlier.shape = NA) +
     geom_jitter(shape = 21, size = 1, fill="darkgray", stroke = 0.5, alpha = 0.5) +  # Add points with black outline
     theme_classic() +  # Use a minimal theme
-    labs(title = study,
+    labs(
          x = "ecSIR encoder status",
          y = paste(steroid_label, " (log10 peak area)")) +  # Add titles and axis labels
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -259,6 +259,8 @@ generate_violin_box_jitter_plot_ismA <- function(data, area_col, steroid_label, 
 prism_data <- processed %>%
   filter(Study == "PRISM")
 
+prism_data$ismA_Encoder <- factor(prism_data$ismA_Encoder, levels = c("Non-Encoder", "Encoder"))
+
 prism_data$sir_Encoder <- factor(prism_data$sir_Encoder, levels = c("Non-Encoder", "Encoder"))
 
 coprostanol_prism <- generate_violin_box_jitter_plot(prism_data, "area_coprostanol","Stool Coprostanol", "PRISM")
@@ -266,6 +268,12 @@ coprostanol_prism <- generate_violin_box_jitter_plot(prism_data, "area_coprostan
 cholesterol_prism <- generate_violin_box_jitter_plot(prism_data, "area_cholesterol", "Stool Cholesterol", "PRISM")
 
 cholestenone_prism <- generate_violin_box_jitter_plot(prism_data, "area_cholestenone", "Stool Cholestenone", "PRISM")
+
+ismA_coprostanol_prism <- ismA_generate_violin_box_jitter_plot(prism_data, "area_coprostanol","Stool Coprostanol", "PRISM")
+
+ismA_cholesterol_prism <- ismA_generate_violin_box_jitter_plot(prism_data, "area_cholesterol", "Stool Cholesterol", "PRISM")
+
+ismA_cholestenone_prism <- ismA_generate_violin_box_jitter_plot(prism_data, "area_cholestenone", "Stool Cholestenone", "PRISM")
 
 wilcox.test(area_cholesterol ~ sir_Encoder, data = prism_data)
 
@@ -282,6 +290,8 @@ wilcox.test(area_coprostanol ~ sir_Encoder, data = prism_data)
 hmp2_data <- processed %>%
   filter(Study == "HMP2")
 
+hmp2_data$ismA_Encoder <- factor(hmp2_data$ismA_Encoder, levels = c("Non-Encoder", "Encoder"))
+
 hmp2_data$sir_Encoder <- factor(hmp2_data$sir_Encoder, levels = c("Non-Encoder", "Encoder"))
 
 coprostanol_hmp2 <- generate_violin_box_jitter_plot(hmp2_data, "area_coprostanol", "Stool Coprostanol", "HMP2")
@@ -289,6 +299,12 @@ coprostanol_hmp2 <- generate_violin_box_jitter_plot(hmp2_data, "area_coprostanol
 cholesterol_hmp2 <- generate_violin_box_jitter_plot(hmp2_data, "area_cholesterol", "Stool Cholesterol", "HMP2")
 
 cholestenone_hmp2 <- generate_violin_box_jitter_plot(hmp2_data, "area_cholestenone", "Stool Cholestenone", "HMP2")
+
+ismA_coprostanol_hmp2 <- ismA_generate_violin_box_jitter_plot(hmp2_data, "area_coprostanol", "Stool Coprostanol", "HMP2")
+
+ismA_cholesterol_hmp2 <- ismA_generate_violin_box_jitter_plot(hmp2_data, "area_cholesterol", "Stool Cholesterol", "HMP2")
+
+ismA_cholestenone_hmp2 <- ismA_generate_violin_box_jitter_plot(hmp2_data, "area_cholestenone", "Stool Cholestenone", "HMP2")
 
 wilcox.test(area_cholesterol ~ sir_Encoder, data = hmp2_data)
 
@@ -307,11 +323,20 @@ protect_data <- processed %>%
 
 protect_data$sir_Encoder <- factor(protect_data$sir_Encoder, levels = c("Non-Encoder", "Encoder"))
 
+protect_data$ismA_Encoder <- factor(protect_data$ismA_Encoder, levels = c("Non-Encoder", "Encoder"))
+
+
 coprostanol_protect <- generate_violin_box_jitter_plot(protect_data, "area_coprostanol", "Stool Coprostanol", "PROTECT")
 
 cholesterol_protect <- generate_violin_box_jitter_plot(protect_data, "area_cholesterol", "Stool Cholesterol", "PROTECT")
 
 cholestenone_protect <- generate_violin_box_jitter_plot(protect_data, "area_cholestenone", "Stool Cholestenone", "PROTECT")
+
+ismA_coprostanol_protect <- ismA_generate_violin_box_jitter_plot(protect_data, "area_coprostanol", "Stool Coprostanol", "PROTECT")
+
+ismA_cholesterol_protect <- ismA_generate_violin_box_jitter_plot(protect_data, "area_cholesterol", "Stool Cholesterol", "PROTECT")
+
+ismA_cholestenone_protect <- ismA_generate_violin_box_jitter_plot(protect_data, "area_cholestenone", "Stool Cholestenone", "PROTECT")
 
 wilcox.test(area_cholesterol ~ sir_Encoder, data = protect_data)
 
@@ -325,15 +350,14 @@ wilcox.test(area_coprostanol ~ sir_Encoder, data = protect_data)
 #plot cholesterol
 ```{r cholesterol_plot}
 
-cholesterol_hmp2 + cholesterol_prism + cholesterol_protect + plot_layout(guides = "collect", axes = "collect", nrow = 1, widths=10)
-
+cholesterol_hmp2 + ismA_cholesterol_hmp2 + cholesterol_prism + ismA_cholesterol_prism + cholesterol_protect + ismA_cholesterol_protect + plot_layout(guides = "collect", axes = "collect", nrow = 1, widths=5, heights=10)
 
 ```
 
 #plot cholestenone
 ```{r cholestenone_plot}
 
-cholestenone_hmp2 + cholestenone_prism + cholestenone_protect + plot_layout(guides = "collect", axes = "collect", nrow = 1, widths=10)
+cholestenone_hmp2 + ismA_cholestenone_hmp2 + cholestenone_prism + ismA_cholestenone_prism + cholestenone_protect + ismA_cholestenone_protect + plot_layout(guides = "collect", axes = "collect", nrow = 1, widths=10)
 
 
 ```
@@ -341,7 +365,7 @@ cholestenone_hmp2 + cholestenone_prism + cholestenone_protect + plot_layout(guid
 #plot coprostanol
 ```{r coprostanol_plot}
 
-coprostanol_hmp2 + coprostanol_prism + coprostanol_protect + plot_layout(guides = "collect", axes = "collect", nrow = 1, widths=10)
+coprostanol_hmp2 + ismA_coprostanol_hmp2 + coprostanol_prism + ismA_coprostanol_prism + coprostanol_protect + ismA_coprostanol_protect + plot_layout(guides = "collect", axes = "collect", nrow = 1, widths=10)
 
 
 ```
