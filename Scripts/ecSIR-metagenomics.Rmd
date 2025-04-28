@@ -11,14 +11,15 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(tibble)
+library(rstudioapi)
 
 ```
 
 ## Read the data
 
 ```{r data}
-
-data <- read.csv("Tables/Supplemental_Table_Metagenomics.txt", sep="\t")
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+data <- read.csv("../Tables/Supplemental_Table_Metagenomics.txt", sep="\t")
 
 ```
 
@@ -208,14 +209,14 @@ plot_summary_ismA_species <- function(data, study) {
       legend.text = element_text(size = 16, family = "Arial")
     ) +
     geom_text(
-      data = subset(ismA_summary, ismA_species_Encoder == "Encoder"),
+      data = subset(ismA_summary_2, ismA_species_Encoder == "Encoder"),
       aes(label = paste0(round(Percentage, 1), "%")),
       vjust = -0.5,
       color = "black",
       size = 5
     )
   
-  return(list(plot = p, summary_table = ismA_summary_2))
+  return(list(plot = p2_2, summary_table = ismA_summary_2))
 }
 
 ```
@@ -458,6 +459,93 @@ protect_ismA_fischer <- fisher.test(as.matrix(ismA_matrix_protect)+1)
 protect_ismA_fischer
 ```
 
+# Fischer tests for species
+
+```{r stats_tests_s}
+
+# Proportions tests
+# HMP2 for converters
+prop.test(matrix(c(117,79,68,128), ncol = 2, byrow = TRUE), alternative="greater")
+
+# PRISM for converters
+prop.test(matrix(c(76,9,40,44), ncol = 2, byrow = TRUE), alternative="greater")
+
+# PROTECT for converters
+prop.test(matrix(c(30,14,17,27), ncol = 2, byrow = TRUE), alternative="greater")
+
+
+# Fischers test
+
+# PRISM
+sir_matrix_prism <- p1_s$summary_table %>%
+  select(Converter, sir_species_Encoder, Count) %>%
+  pivot_wider(names_from = Converter, values_from = Count) %>%
+  column_to_rownames("sir_species_Encoder")
+
+sir_matrix_prism[is.na(sir_matrix_prism)] <- 0
+
+fischer_prism <- fisher.test(as.matrix(sir_matrix_prism)+1)
+
+fischer_prism
+
+ismA_matrix_prism <- p2_s$summary_table %>%
+  filter(!is.na(ismA_species_Encoder)) %>%
+  select(Converter, ismA_species_Encoder, Count) %>%
+  pivot_wider(names_from = Converter, values_from = Count) %>%
+  column_to_rownames("ismA_species_Encoder")
+
+ismA_matrix_prism[is.na(ismA_matrix_prism)] <- 0
+
+fischer_prism_ismA <- fisher.test(as.matrix(ismA_matrix_prism)+1)
+
+fischer_prism_ismA
+
+# HMP2
+sir_matrix_hmp2 <- p3_s$summary_table %>%
+  select(Converter, sir_species_Encoder, Count) %>%
+  pivot_wider(names_from = Converter, values_from = Count) %>%
+  column_to_rownames("sir_species_Encoder")
+
+sir_matrix_hmp2[is.na(sir_matrix_hmp2)] <- 0
+
+sir_hmp2_fischer <- fisher.test(as.matrix(sir_matrix_hmp2)+1)
+
+sir_hmp2_fischer
+
+ismA_matrix_hmp2 <- p4_s$summary_table %>%
+  select(Converter, ismA_species_Encoder, Count) %>%
+  pivot_wider(names_from = Converter, values_from = Count) %>%
+  column_to_rownames("ismA_species_Encoder")
+
+ismA_matrix_hmp2[is.na(ismA_matrix_hmp2)] <- 0
+
+ismA_hmp2_fischer <- fisher.test(as.matrix(ismA_matrix_hmp2)+1)
+
+ismA_hmp2_fischer
+
+# PROTECT
+sir_matrix_protect <- p5_s$summary_table %>%
+  select(Converter, sir_species_Encoder, Count) %>%
+  pivot_wider(names_from = Converter, values_from = Count) %>%
+  column_to_rownames("sir_species_Encoder")
+
+sir_matrix_protect[is.na(sir_matrix_protect)] <- 0
+
+protect_sir_fischer <- fisher.test(as.matrix(sir_matrix_protect)+1)
+
+protect_sir_fischer
+
+ismA_matrix_protect <- p6_s$summary_table %>%
+  select(Converter, ismA_species_Encoder, Count) %>%
+  pivot_wider(names_from = Converter, values_from = Count) %>%
+  column_to_rownames("ismA_species_Encoder")
+
+ismA_matrix_protect[is.na(ismA_matrix_protect)] <- 0
+
+protect_ismA_fischer <- fisher.test(as.matrix(ismA_matrix_protect)+1)
+
+protect_ismA_fischer
+```
 
 
 ```{r plot_overlap_func}
