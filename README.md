@@ -1,5 +1,5 @@
-# ecSIR-manuscript-bioinfo
-Code for ecSIR manuscript
+# spiR-manuscript-bioinfo
+Code for spiR manuscript
 
 PRISM/ contains all of the PRISM data
 
