@@ -1,5 +1,5 @@
 ---
-title: "sir-metagenomics-analysis"
+title: "SpiR-metagenomics-analysis"
 author: "Angela Jiang"
 date: "`r Sys.Date()`"
 output: html_document
@@ -28,34 +28,34 @@ data <- read.csv("../Tables/Supplemental_Table_Metagenomics.txt", sep="\t")
 ```{r cpm, echo=FALSE}
 processed <- data %>%
   filter(total_reads >= 1000000) %>%
-  mutate(sir_species_cpm = reads_mapped_sir_species / total_reads * 1000000) %>%
+  mutate(SpiR_species_cpm = reads_mapped_SpiR_species / total_reads * 1000000) %>%
   mutate(ismA_species_cpm = reads_mapped_ismA_species / total_reads * 1000000) %>%
   mutate(ismA_gene_cpm = reads_mapped_ismA_gene / total_reads * 1000000) %>%
-  mutate(sir_gene_cpm = reads_mapped_sir_gene / total_reads * 1000000)
+  mutate(SpiR_gene_cpm = reads_mapped_SpiR_gene / total_reads * 1000000)
 
-# Any sample with above 1 cpm for ismA/sir is considered to have that gene
+# Any sample with above 1 cpm for ismA/SpiR is considered to have that gene
 processed <- processed %>%
   mutate(ismA_Encoder = ifelse(ismA_gene_cpm >= 1, "Encoder", "Non-Encoder")) %>%
-  mutate(sir_Encoder = ifelse(sir_gene_cpm >= 1, "Encoder", "Non-Encoder")) %>%
+  mutate(SpiR_Encoder = ifelse(SpiR_gene_cpm >= 1, "Encoder", "Non-Encoder")) %>%
   mutate(ismA_species_Encoder = ifelse(ismA_species_cpm >= 18000, "Encoder", "Non-Encoder")) %>%
-  mutate(sir_species_Encoder = ifelse(sir_species_cpm >= 18000, "Encoder", "Non-Encoder")) 
+  mutate(SpiR_species_Encoder = ifelse(SpiR_species_cpm >= 18000, "Encoder", "Non-Encoder")) 
 ```
 
 ```{r func_plot_perc}
 
-# function to plot bar graph for sir
-plot_summary_sir <- function(data, study) {
-  sir_summary <- data %>%
+# function to plot bar graph for SpiR
+plot_summary_SpiR <- function(data, study) {
+  SpiR_summary <- data %>%
     filter(Study == study) %>%
     mutate(Converter = ifelse(area_coprostanol > get(paste(study, "_area_threshold", sep="")), "Converter", "Non-Converter")) %>%
-    group_by(Converter, sir_Encoder) %>%
+    group_by(Converter, SpiR_Encoder) %>%
     summarise(Count = n(), .groups = "drop") %>%
     group_by(Converter) %>%
     mutate(Percentage = (Count / sum(Count)) * 100)
   
-  sir_summary[['sir_Encoder']] <- factor(sir_summary[['sir_Encoder']], levels = c("Non-Encoder", "Encoder"))
+  SpiR_summary[['SpiR_Encoder']] <- factor(SpiR_summary[['SpiR_Encoder']], levels = c("Non-Encoder", "Encoder"))
   
-  p <- ggplot(sir_summary, aes(x = Converter, y = Count, fill = sir_Encoder)) +
+  p <- ggplot(SpiR_summary, aes(x = Converter, y = Count, fill = SpiR_Encoder)) +
     geom_bar(stat = "identity") +
     scale_fill_manual(values = c("Encoder" = "#377eb8", "Non-Encoder" = "gray")) +  # Custom colors
     labs(
@@ -65,7 +65,7 @@ plot_summary_sir <- function(data, study) {
       y = "Count"
     ) +
     theme_classic() +
-    guides(fill = guide_legend(title = "ecSIR")) +
+    guides(fill = guide_legend(title = "ecSpiR")) +
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1, family = "Arial"),
       legend.position = "none",
@@ -76,18 +76,18 @@ plot_summary_sir <- function(data, study) {
       legend.text = element_text(size = 16, family = "Arial")
     ) +
     geom_text(
-      data = subset(sir_summary, sir_Encoder == "Encoder"),
+      data = subset(SpiR_summary, SpiR_Encoder == "Encoder"),
       aes(label = paste0(round(Percentage, 1), "%")),
       vjust = -0.5,
       color = "black",
       size = 5
     )
   
-    return(list(plot = p, summary_table = sir_summary))
+    return(list(plot = p, summary_table = SpiR_summary))
 }
 
 plot_summary_ismA <- function(data, study) {
-  sir_summary <- data %>%
+  SpiR_summary <- data %>%
     filter(Study == study) %>%
     mutate(Converter = ifelse(area_coprostanol > get(paste(study, "_area_threshold", sep="")), "Converter", "Non-Converter")) %>%
     group_by(Converter, ismA_Encoder) %>%
@@ -95,9 +95,9 @@ plot_summary_ismA <- function(data, study) {
     group_by(Converter) %>%
     mutate(Percentage = (Count / sum(Count)) * 100)
   
-  sir_summary[['ismA_Encoder']] <- factor(sir_summary[['ismA_Encoder']], levels = c("Non-Encoder", "Encoder"))
+  SpiR_summary[['ismA_Encoder']] <- factor(SpiR_summary[['ismA_Encoder']], levels = c("Non-Encoder", "Encoder"))
   
-  p <- ggplot(sir_summary, aes(x = Converter, y = Count, fill = ismA_Encoder)) +
+  p <- ggplot(SpiR_summary, aes(x = Converter, y = Count, fill = ismA_Encoder)) +
     geom_bar(stat = "identity") +
     scale_fill_manual(values = c("Encoder" = "#ff7f00", "Non-Encoder" = "gray")) +
     labs(
@@ -118,14 +118,14 @@ plot_summary_ismA <- function(data, study) {
       legend.text = element_text(size = 16, family = "Arial")
     ) +
     geom_text(
-      data = subset(sir_summary, ismA_Encoder == "Encoder"),
+      data = subset(SpiR_summary, ismA_Encoder == "Encoder"),
       aes(label = paste0(round(Percentage, 1), "%")),
       vjust = -0.5,
       color = "black",
       size = 5
     )
   
-  return(list(plot = p, summary_table = sir_summary))
+  return(list(plot = p, summary_table = SpiR_summary))
 }
 
 ```
@@ -133,18 +133,18 @@ plot_summary_ismA <- function(data, study) {
 ```{r plot_func_species}
 
 # function to plot bar graph for species
-plot_summary_sir_species <- function(data, study) {
-  sir_summary <- data %>%
+plot_summary_SpiR_species <- function(data, study) {
+  SpiR_summary <- data %>%
     filter(Study == study) %>%
     mutate(Converter = ifelse(area_coprostanol > get(paste(study, "_area_threshold", sep="")), "Converter", "Non-Converter")) %>%
-    group_by(Converter, sir_species_Encoder) %>%
+    group_by(Converter, SpiR_species_Encoder) %>%
     summarise(Count = n(), .groups = "drop") %>%
     group_by(Converter) %>%
     mutate(Percentage = (Count / sum(Count)) * 100)
   
-  sir_summary[['sir_species_Encoder']] <- factor(sir_summary[['sir_species_Encoder']], levels = c("Non-Encoder", "Encoder"))
+  SpiR_summary[['SpiR_species_Encoder']] <- factor(SpiR_summary[['SpiR_species_Encoder']], levels = c("Non-Encoder", "Encoder"))
   
-  p <- ggplot(sir_summary, aes(x = Converter, y = Count, fill = sir_species_Encoder)) +
+  p <- ggplot(SpiR_summary, aes(x = Converter, y = Count, fill = SpiR_species_Encoder)) +
     geom_bar(stat = "identity") +
     scale_fill_manual(values = c("Encoder" = "#377eb8", "Non-Encoder" = "gray")) +  # Custom colors
     labs(
@@ -154,7 +154,7 @@ plot_summary_sir_species <- function(data, study) {
       y = "Count"
     ) +
     theme_classic() +
-    guides(fill = guide_legend(title = "ecSIR")) +
+    guides(fill = guide_legend(title = "ecSpiR")) +
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1, family = "Arial"),
       legend.position = "none",
@@ -165,14 +165,14 @@ plot_summary_sir_species <- function(data, study) {
       legend.text = element_text(size = 16, family = "Arial")
     ) +
     geom_text(
-      data = subset(sir_summary, sir_species_Encoder == "Encoder"),
+      data = subset(SpiR_summary, SpiR_species_Encoder == "Encoder"),
       aes(label = paste0(round(Percentage, 1), "%")),
       vjust = -0.5,
       color = "black",
       size = 5
     )
   
-  return(list(plot = p, summary_table = sir_summary))
+  return(list(plot = p, summary_table = SpiR_summary))
 }
 
 plot_summary_ismA_species <- function(data, study) {
@@ -229,7 +229,7 @@ library(patchwork)
 
 PRISM_area_threshold <- 1e6
 
-p1 <- plot_summary_sir(processed, "PRISM")
+p1 <- plot_summary_SpiR(processed, "PRISM")
 
 p2 <- plot_summary_ismA(processed, "PRISM")
 
@@ -237,7 +237,7 @@ prism <- p1$plot + p2$plot
 
 prism
 
-p1_s <- plot_summary_sir_species(processed, "PRISM")
+p1_s <- plot_summary_SpiR_species(processed, "PRISM")
 
 p2_s <- plot_summary_ismA_species(processed, "PRISM")
 
@@ -255,7 +255,7 @@ library(patchwork)
 
 HMP2_area_threshold <- 1e6
 
-p3 <- plot_summary_sir(processed, "HMP2")
+p3 <- plot_summary_SpiR(processed, "HMP2")
 
 p4 <- plot_summary_ismA(processed, "HMP2")
 
@@ -263,7 +263,7 @@ hmp2 <- p3$plot + p4$plot
 
 hmp2
 
-p3_s <- plot_summary_sir_species(processed, "HMP2")
+p3_s <- plot_summary_SpiR_species(processed, "HMP2")
 
 p4_s <- plot_summary_ismA_species(processed, "HMP2")
 
@@ -278,7 +278,7 @@ library(patchwork)
 
 PROTECT_area_threshold <- 1e5
 
-p5 <- plot_summary_sir(processed, "PROTECT")
+p5 <- plot_summary_SpiR(processed, "PROTECT")
 
 p6 <- plot_summary_ismA(processed, "PROTECT")
 
@@ -286,7 +286,7 @@ protect <- p5$plot + p6$plot
 
 protect
 
-p5_s <- plot_summary_sir_species(processed, "PROTECT")
+p5_s <- plot_summary_SpiR_species(processed, "PROTECT")
 
 p6_s <- plot_summary_ismA_species(processed, "PROTECT")
 
@@ -316,10 +316,10 @@ disease_summary_ismA <- processed %>%
   group_by(Diagnosis) %>%
   mutate(Percentage = (Count / sum(Count)) * 100)
 
-disease_summary_sir <- processed %>%
+disease_summary_SpiR <- processed %>%
   mutate(Diagnosis = factor(Diagnosis, levels = c("nonIBD", "CD", "UC")))  %>%
-  mutate(sir_Encoder = factor(sir_Encoder, levels = c("Encoder", "Non-Encoder")))  %>%
-  group_by(Diagnosis, sir_Encoder, Study) %>%
+  mutate(SpiR_Encoder = factor(SpiR_Encoder, levels = c("Encoder", "Non-Encoder")))  %>%
+  group_by(Diagnosis, SpiR_Encoder, Study) %>%
   summarise(Count = n(), .groups = "drop") %>%
   group_by(Diagnosis) %>%
   mutate(Percentage = (Count / sum(Count)) * 100)
@@ -343,14 +343,14 @@ p_ismA <- ggplot(disease_summary_ismA, aes(x = Diagnosis, y = Count, fill = ismA
     legend.title = element_text(size = 16, family = "Arial"),  # Legend title
     legend.text = element_text(size = 16, family = "Arial")) 
 
-# For disease_summary_sir plot
-p_sir <- ggplot(disease_summary_sir, aes(x = Diagnosis, y = Count, fill = sir_Encoder)) +
+# For disease_summary_SpiR plot
+p_SpiR <- ggplot(disease_summary_SpiR, aes(x = Diagnosis, y = Count, fill = SpiR_Encoder)) +
   geom_bar(stat = "identity", position = "stack") +
   scale_fill_manual(values = c("Encoder" = "#377eb8", "Non-Encoder" = "gray")) +
   labs(
     x = "Diagnosis",
     y = "Samples",
-    title = "sir Encoder Status by Diagnosis"
+    title = "SpiR Encoder Status by Diagnosis"
   ) +
   facet_wrap(~Study) +
   theme_classic() +
@@ -363,7 +363,7 @@ p_sir <- ggplot(disease_summary_sir, aes(x = Diagnosis, y = Count, fill = sir_En
 
 
 
-d_all <- p_sir + p_ismA
+d_all <- p_SpiR + p_ismA
 
 d_all
 
@@ -390,14 +390,14 @@ prop.test(matrix(c(32,12,24,20), ncol = 2, byrow = TRUE), alternative="greater")
 # Fischers test
 
 # PRISM
-sir_matrix_prism <- p1$summary_table %>%
-  select(Converter, sir_Encoder, Count) %>%
+SpiR_matrix_prism <- p1$summary_table %>%
+  select(Converter, SpiR_Encoder, Count) %>%
   pivot_wider(names_from = Converter, values_from = Count) %>%
-  column_to_rownames("sir_Encoder")
+  column_to_rownames("SpiR_Encoder")
 
-sir_matrix_prism[is.na(sir_matrix_prism)] <- 0
+SpiR_matrix_prism[is.na(SpiR_matrix_prism)] <- 0
 
-fischer_prism <- fisher.test(as.matrix(sir_matrix_prism)+1)
+fischer_prism <- fisher.test(as.matrix(SpiR_matrix_prism)+1)
 
 fischer_prism
 
@@ -413,16 +413,16 @@ fischer_prism_ismA <- fisher.test(as.matrix(ismA_matrix_prism)+1)
 fischer_prism_ismA
 
 # HMP2
-sir_matrix_hmp2 <- p3$summary_table %>%
-  select(Converter, sir_Encoder, Count) %>%
+SpiR_matrix_hmp2 <- p3$summary_table %>%
+  select(Converter, SpiR_Encoder, Count) %>%
   pivot_wider(names_from = Converter, values_from = Count) %>%
-  column_to_rownames("sir_Encoder")
+  column_to_rownames("SpiR_Encoder")
 
-sir_matrix_hmp2[is.na(sir_matrix_hmp2)] <- 0
+SpiR_matrix_hmp2[is.na(SpiR_matrix_hmp2)] <- 0
 
-sir_hmp2_fischer <- fisher.test(as.matrix(sir_matrix_hmp2)+1)
+SpiR_hmp2_fischer <- fisher.test(as.matrix(SpiR_matrix_hmp2)+1)
 
-sir_hmp2_fischer
+SpiR_hmp2_fischer
 
 ismA_matrix_hmp2 <- p4$summary_table %>%
   select(Converter, ismA_Encoder, Count) %>%
@@ -436,16 +436,16 @@ ismA_hmp2_fischer <- fisher.test(as.matrix(ismA_matrix_hmp2)+1)
 ismA_hmp2_fischer
 
 # PROTECT
-sir_matrix_protect <- p5$summary_table %>%
-  select(Converter, sir_Encoder, Count) %>%
+SpiR_matrix_protect <- p5$summary_table %>%
+  select(Converter, SpiR_Encoder, Count) %>%
   pivot_wider(names_from = Converter, values_from = Count) %>%
-  column_to_rownames("sir_Encoder")
+  column_to_rownames("SpiR_Encoder")
 
-sir_matrix_protect[is.na(sir_matrix_protect)] <- 0
+SpiR_matrix_protect[is.na(SpiR_matrix_protect)] <- 0
 
-protect_sir_fischer <- fisher.test(as.matrix(sir_matrix_protect)+1)
+protect_SpiR_fischer <- fisher.test(as.matrix(SpiR_matrix_protect)+1)
 
-protect_sir_fischer
+protect_SpiR_fischer
 
 ismA_matrix_protect <- p6$summary_table %>%
   select(Converter, ismA_Encoder, Count) %>%
@@ -477,14 +477,14 @@ prop.test(matrix(c(30,14,17,27), ncol = 2, byrow = TRUE), alternative="greater")
 # Fischers test
 
 # PRISM
-sir_matrix_prism <- p1_s$summary_table %>%
-  select(Converter, sir_species_Encoder, Count) %>%
+SpiR_matrix_prism <- p1_s$summary_table %>%
+  select(Converter, SpiR_species_Encoder, Count) %>%
   pivot_wider(names_from = Converter, values_from = Count) %>%
-  column_to_rownames("sir_species_Encoder")
+  column_to_rownames("SpiR_species_Encoder")
 
-sir_matrix_prism[is.na(sir_matrix_prism)] <- 0
+SpiR_matrix_prism[is.na(SpiR_matrix_prism)] <- 0
 
-fischer_prism <- fisher.test(as.matrix(sir_matrix_prism)+1)
+fischer_prism <- fisher.test(as.matrix(SpiR_matrix_prism)+1)
 
 fischer_prism
 
@@ -501,16 +501,16 @@ fischer_prism_ismA <- fisher.test(as.matrix(ismA_matrix_prism)+1)
 fischer_prism_ismA
 
 # HMP2
-sir_matrix_hmp2 <- p3_s$summary_table %>%
-  select(Converter, sir_species_Encoder, Count) %>%
+SpiR_matrix_hmp2 <- p3_s$summary_table %>%
+  select(Converter, SpiR_species_Encoder, Count) %>%
   pivot_wider(names_from = Converter, values_from = Count) %>%
-  column_to_rownames("sir_species_Encoder")
+  column_to_rownames("SpiR_species_Encoder")
 
-sir_matrix_hmp2[is.na(sir_matrix_hmp2)] <- 0
+SpiR_matrix_hmp2[is.na(SpiR_matrix_hmp2)] <- 0
 
-sir_hmp2_fischer <- fisher.test(as.matrix(sir_matrix_hmp2)+1)
+SpiR_hmp2_fischer <- fisher.test(as.matrix(SpiR_matrix_hmp2)+1)
 
-sir_hmp2_fischer
+SpiR_hmp2_fischer
 
 ismA_matrix_hmp2 <- p4_s$summary_table %>%
   select(Converter, ismA_species_Encoder, Count) %>%
@@ -524,16 +524,16 @@ ismA_hmp2_fischer <- fisher.test(as.matrix(ismA_matrix_hmp2)+1)
 ismA_hmp2_fischer
 
 # PROTECT
-sir_matrix_protect <- p5_s$summary_table %>%
-  select(Converter, sir_species_Encoder, Count) %>%
+SpiR_matrix_protect <- p5_s$summary_table %>%
+  select(Converter, SpiR_species_Encoder, Count) %>%
   pivot_wider(names_from = Converter, values_from = Count) %>%
-  column_to_rownames("sir_species_Encoder")
+  column_to_rownames("SpiR_species_Encoder")
 
-sir_matrix_protect[is.na(sir_matrix_protect)] <- 0
+SpiR_matrix_protect[is.na(SpiR_matrix_protect)] <- 0
 
-protect_sir_fischer <- fisher.test(as.matrix(sir_matrix_protect)+1)
+protect_SpiR_fischer <- fisher.test(as.matrix(SpiR_matrix_protect)+1)
 
-protect_sir_fischer
+protect_SpiR_fischer
 
 ismA_matrix_protect <- p6_s$summary_table %>%
   select(Converter, ismA_species_Encoder, Count) %>%
@@ -562,13 +562,13 @@ plot_study_metabolite <- function(data, Study, area_threshold) {
     filter(Study == Study) %>%
     mutate(Converter = ifelse(area_coprostanol > area_threshold, "Converter", "Non-Converter")) %>%
     mutate(bar_color = case_when(
-      sir_species_Encoder == "Encoder" & ismA_species_Encoder == "Encoder" ~ "#B6ADC7",
-      sir_species_Encoder == "Encoder" & ismA_species_Encoder == "Non-Encoder" ~ "#A3BDD0",
-      sir_species_Encoder == "Non-Encoder" & ismA_species_Encoder == "Encoder" ~ "#E6B88C",
+      SpiR_species_Encoder == "Encoder" & ismA_species_Encoder == "Encoder" ~ "#B6ADC7",
+      SpiR_species_Encoder == "Encoder" & ismA_species_Encoder == "Non-Encoder" ~ "#A3BDD0",
+      SpiR_species_Encoder == "Non-Encoder" & ismA_species_Encoder == "Encoder" ~ "#E6B88C",
       TRUE ~ "#c9c9c9"  # Default case (if none of the above are true)
     ))
 
-  # Set the levels of 'bar_color' to ensure the desired order in the plot
+  # Set the levels of 'bar_color' to ensure the deSpiRed order in the plot
   processed2$bar_color <- factor(processed2$bar_color, levels = c("#c9c9c9", "#E6B88C", "#A3BDD0", "#B6ADC7"))
 
   # Calculate the percentage for each bar

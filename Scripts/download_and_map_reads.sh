@@ -10,10 +10,10 @@ module load sratoolkit
 export TMPDIR=/lscratch/$SLURM_JOB_ID
 
 SAMPLE=$1 # SRA run ID (e.g., SRR######)
-NAME="all_ismA"
-IND=/data/jiangak/sir_mapping
+NAME="all_spiR"
+IND=/data/jiangak/spir_mapping
 THREADS=10 # Number of threads
-OUT=/data/jiangak/sir_mapping/ismA_out_prism # path to output directory
+OUT=/data/jiangak/sir_mapping/spir_out # path to output directory
 TMP=/lscratch/$SLURM_JOB_ID # Path to temporary directory
 HUMAN=/gpfs/gsfs12/users/Irp-jiang/share/DB_Share/human/chm13v2.0/chm13v2.0 #bowtie human reference path
 BOWTIE2_INDEXES=/data/jiangak/sir_mapping/all_ismA
@@ -61,13 +61,13 @@ cat /lscratch/$SLURM_JOB_ID/${SAMPLE}_1.fq.gz | seqkit -j $THREADS stats -T > /l
 cat /lscratch/$SLURM_JOB_ID/${SAMPLE}_2.fq.gz | seqkit -j $THREADS stats -T >> /lscratch/$SLURM_JOB_ID/${SAMPLE}.stats
 TOTAL=$(head -n 2 /lscratch/$SLURM_JOB_ID/${SAMPLE}.stats | tail -n 1| cut -f 4)
 
-# Map reads to the bilirubin reductase index
+# Map reads to the spiR index
 echo "Mapping Reads"
 bowtie2 --no-unal -p $THREADS -x ${IND}/${NAME} -1 /lscratch/$SLURM_JOB_ID/${SAMPLE}_1.fq.gz -2 /lscratch/$SLURM_JOB_ID/${SAMPLE}_2.fq.gz \
     | samtools view -bS | samtools sort > /lscratch/$SLURM_JOB_ID/${SAMPLE}.${NAME}.bam
 COUNT=$(samtools idxstats /lscratch/$SLURM_JOB_ID/${SAMPLE}.${NAME}.bam | awk '{ SUM += $3} END {print SUM}')
 
-# Print sample, reads mapped to bilirubin reductase, total reads in sample
+# Print sample, reads mapped to spiR, total reads in sample
 echo -e "${SAMPLE}\t${COUNT}\t${TOTAL}" > /lscratch/$SLURM_JOB_ID/${SAMPLE}.${NAME}.mapping.summary
 mv /lscratch/$SLURM_JOB_ID/${SAMPLE}.${NAME}.bam ${OUT}/
 mv /lscratch/$SLURM_JOB_ID/${SAMPLE}.${NAME}.mapping.summary ${OUT}/
