@@ -1,8 +1,9 @@
 # spiR-manuscript-bioinfo
-Code for spiR manuscript
+Code to reproduce Figure 6 and Figure S9 in Arp et al. 2026, "SpiR is a gut microbial enzyme that drives cholesterol conversion"
 
-PRISM/ contains all of the PRISM data
+Tables/ contains all of the metagenomic data needed to replicate Figure 6
 
-HMP2/ contains all of the HMP2 data
+Scripts/ contains all of the scripts used to determine cholesterol converter status and generate the plot, and generate the ROC curve 
 
-Scripts/ contains all of the scripts used to determine cholesterol converter status and generate the plot 
+## Citation
+TBD
