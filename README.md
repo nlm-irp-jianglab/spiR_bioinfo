@@ -8,9 +8,11 @@ Scripts/ contains all of the scripts used to determine cholesterol converter sta
 ## ROC Curve
 The ROC Curves in Figure 6f and Figure S9 can be replicated using Scripts/Plot-ROC.py
 
-`cd Scripts/
+```
+cd Scripts/
 
-python Plot-ROC.py`
+python Plot-ROC.py
+```
 
 ## Citation
 TBD
