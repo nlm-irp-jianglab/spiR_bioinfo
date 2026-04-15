@@ -15,4 +15,4 @@ python Plot-ROC.py
 ```
 
 ## Citation
-TBD
+Arp, G., Levy, S., Jiang, A.K. et al. SpiR is a gut microbial enzyme that drives cholesterol conversion. Nat Commun 17, 3495 (2026). https://doi.org/10.1038/s41467-026-70820-6
